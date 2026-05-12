@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "username": "@chihab2088",
+        "password": "012cfdacdb03ec9e80fb3aa1ef548ca45278b6a9f4a614f85c6460614879da46",
+        "max_bots": 999999,
+        "created_at": "2026-03-19 23:26:41",
+        "expiry_date": "2126-02-23 23:26:41",
+        "is_admin": true,
+        "telegram": "@chihab208"
+    }
+]
