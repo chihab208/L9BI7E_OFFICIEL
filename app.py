@@ -20,6 +20,30 @@ import friend_service
 app = Flask(__name__)
 app.secret_key = "L9BI7E_SECRET_KEY_2026"
 
+MAINTENANCE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database', 'maintenance.json')
+
+def is_maintenance_mode():
+    if not os.path.exists(MAINTENANCE_FILE):
+        return False
+    try:
+        with open(MAINTENANCE_FILE, 'r') as f:
+            return json.load(f).get('enabled', False)
+    except:
+        return False
+
+def set_maintenance_mode(status):
+    with open(MAINTENANCE_FILE, 'w') as f:
+        json.dump({'enabled': status}, f)
+
+@app.before_request
+def check_maintenance():
+    if is_maintenance_mode() and request.path != '/maintenance' and not request.path.startswith('/static') and not session.get('is_admin'):
+        return render_template('maintenance.html')
+
+@app.route('/maintenance')
+def maintenance_page():
+    return "<h1>الموقع في وضع الصيانة حالياً. يرجى العودة لاحقاً.</h1>"
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LONELY_SOURCE_DIR = os.path.join(BASE_DIR, 'lonely')  # المصدر الأصلي
 BOTS_STORAGE = os.path.join(BASE_DIR, 'bots_storage')
@@ -1365,6 +1389,68 @@ def get_user(user_id):
         'telegram': user.get('telegram', ''),
         'is_admin': user.get('is_admin', False)
     })
+
+@app.route('/admin/maintenance', methods=['POST'])
+def toggle_maintenance():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'error': 'Unauthorized'})
+    
+    data = request.json
+    status = data.get('enabled', False)
+    set_maintenance_mode(status)
+    return jsonify({'success': True, 'enabled': status})
+
+@app.route('/admin/files', methods=['GET'])
+def list_bot_files():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    files = []
+    for root, dirs, filenames in os.walk(LONELY_SOURCE_DIR):
+        for filename in filenames:
+            if filename.endswith(('.py', '.json', '.txt', '.js', '.css', '.html')):
+                rel_path = os.path.relpath(os.path.join(root, filename), LONELY_SOURCE_DIR)
+                files.append(rel_path)
+    
+    return render_template('admin_files.html', files=files)
+
+@app.route('/admin/files/read', methods=['POST'])
+def read_bot_file():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'error': 'Unauthorized'})
+    
+    file_path = request.json.get('path')
+    full_path = os.path.join(LONELY_SOURCE_DIR, file_path)
+    
+    if not os.path.exists(full_path) or '..' in file_path:
+        return jsonify({'success': False, 'error': 'ملف غير صالح'})
+    
+    try:
+        with open(full_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return jsonify({'success': True, 'content': content})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/files/save', methods=['POST'])
+def save_bot_file():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'error': 'Unauthorized'})
+    
+    data = request.json
+    file_path = data.get('path')
+    content = data.get('content')
+    full_path = os.path.join(LONELY_SOURCE_DIR, file_path)
+    
+    if not os.path.exists(full_path) or '..' in file_path:
+        return jsonify({'success': False, 'error': 'ملف غير صالح'})
+    
+    try:
+        with open(full_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 if __name__ == '__main__':
     print("="*70)
     print("🚀 L9BI7E Bot Manager Starting...")

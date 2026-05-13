@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PANELE BOT - لوحة التحكم</title>
+    <title>لوحة التحكم - 𝑳𝟗𝑩𝑰𝟕𝑬 𝑶𝑭𝑭𝑰𝑪𝑰𝑬𝑳</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -17,6 +17,20 @@
             <i class="fas fa-plus-circle"></i>
             <span>إنشاء بوت</span>
         </a>
+        {% if user.is_admin %}
+        <a href="/admin" class="menu-item">
+            <i class="fas fa-users-cog"></i>
+            <span>المستخدمين</span>
+        </a>
+        <a href="/admin/files" class="menu-item">
+            <i class="fas fa-file-code"></i>
+            <span>إدارة الملفات</span>
+        </a>
+        <a href="#" class="menu-item" onclick="toggleMaintenance()">
+            <i class="fas fa-tools"></i>
+            <span>وضع الصيانة</span>
+        </a>
+        {% endif %}
         
         {% if links %}
         <div class="divider"></div>
@@ -104,6 +118,25 @@
             }
         }
         
+        function toggleMaintenance() {
+            const currentStatus = confirm('هل تريد تغيير حالة وضع الصيانة للموقع؟');
+            if(!currentStatus) return;
+            
+            const enabled = confirm('اضغط موافق لتفعيل وضع الصيانة، وإلغاء لتعطيله');
+            
+            fetch('/admin/maintenance', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enabled: enabled})
+            })
+            .then(r => r.json())
+            .then(d => {
+                if(d.success) {
+                    alert('✅ تم تحديث حالة الصيانة بنجاح: ' + (enabled ? 'مفعل' : 'معطل'));
+                }
+            });
+        }
+
         function controlBot(id, action) {
             const btn = event.target;
             btn.disabled = true;

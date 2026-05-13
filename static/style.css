@@ -1140,3 +1140,80 @@ body::before {
         min-width: auto;
     }
 }
+
+/* Mobile Responsiveness Updates */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+        margin-top: 60px;
+    }
+    
+    .sidebar {
+        top: 0;
+        right: 0;
+        left: 0;
+        width: 100% !important;
+        height: 60px;
+        border-radius: 0;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0;
+        border-top: none;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .sidebar:hover {
+        width: 100% !important;
+    }
+    
+    .sidebar .menu-item {
+        padding: 0;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        flex: 1;
+    }
+    
+    .sidebar .menu-item i {
+        margin-left: 0;
+        font-size: 20px;
+    }
+    
+    .sidebar .menu-item span {
+        display: none;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .card {
+        padding: 15px;
+    }
+    
+    .login-card {
+        width: 95%;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    h1, h2 {
+        font-size: 1.5rem;
+    }
+    
+    .btn-action {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* Specific adjustment for high DPI devices */
+@media screen and (min-resolution: 192dpi), screen and (-webkit-min-device-pixel-ratio: 2) {
+    body {
+        font-size: 16px;
+    }
+    input, button {
+        padding: 12px 20px;
+    }
+}
