@@ -246,16 +246,30 @@ def serve_js():
 
 
 def verify_account(uid, password):
+    # محاولة التحقق عبر الـ API الخارجي
     try:
         response = requests.get(f"{VERIFY_API_URL}?uid={uid}&password={password}", timeout=10)
         if response.status_code == 200:
             data = response.json()
             if data.get('status') == 'success' and 'token' in data:
                 return {'success': True, 'message': '✅ الحساب صحيح', 'data': data}
-            return {'success': False, 'message': '❌ بيانات الحساب غير صحيحة'}
-        return {'success': False, 'message': f'❌ خطأ في الاتصال بالخادم: {response.status_code}'}
-    except Exception as e:
-        return {'success': False, 'message': f'❌ حدث خطأ: {str(e)}'}
+    except:
+        pass
+
+    # إذا فشل الـ API الخارجي، سنقوم بالتحقق المباشر من Garena (خاصة لحسابات الضيف)
+    try:
+        url = "https://100067.connect.garena.com/oauth/guest/token/grant"
+        headers = {"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "GarenaMSDK/4.0.19P4"}
+        data = {"uid": uid, "password": password, "response_type": "token", "client_type": "2", "client_id": "100067"}
+        res = requests.post(url, headers=headers, data=data, verify=False, timeout=10)
+        if res.status_code == 200 and "access_token" in res.json():
+            return {'success': True, 'message': '✅ تم التحقق من حساب الضيف بنجاح'}
+    except:
+        pass
+
+    # في حال فشل كل شيء، سنسمح بإنشاء البوت إذا كانت البيانات تبدو منطقية (اختياري حسب رغبة المستخدم)
+    # لكن حالياً سنعيد رسالة خطأ واضحة
+    return {'success': False, 'message': '❌ بيانات الحساب غير صحيحة أو انتهت صلاحية الجلسة'}
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -549,9 +563,14 @@ def create_bot():
     if user_bots >= user['max_bots']:
         return jsonify({'success': False, 'error': '❌ لقد وصلت للحد الأقصى'})
     bot_uid, bot_password = data['uid'], data['password']
+    # سنحاول التحقق، لكن إذا فشل سنعطي تحذيراً أو نسمح بالاستمرار إذا كانت البيانات تبدو كحساب ضيف
     vr = verify_account(bot_uid, bot_password)
+    # إذا كنت تريد إجبار التحقق، اترك هذا الشرط. إذا كنت تريد السماح بالبيانات "كما هي" فقم بتعطيله.
+    # بناءً على طلبك، سأجعله أكثر مرونة.
     if not vr.get('success'):
-        return jsonify({'success': False, 'error': f"❌ فشل التحقق: {vr.get('message')}"})
+        # إذا كانت كلمة المرور طويلة جداً (مثل توكن حساب الضيف)، قد نتجاوز التحقق الصارم
+        if len(bot_password) < 32: 
+            return jsonify({'success': False, 'error': f"❌ فشل التحقق: {vr.get('message')}"})
     user_folder = os.path.join(USERS_STORAGE, f"user_{user_id}_{user['username']}")
     bots_folder = os.path.join(user_folder, 'bots')
     bot_path = os.path.join(bots_folder, bot_uid)
