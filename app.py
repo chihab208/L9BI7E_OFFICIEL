@@ -443,7 +443,15 @@ def dashboard():
     if session.get('is_admin'):  return redirect('/admin')
     users = get_users()
     user = next((u for u in users if u['id'] == session['user_id']), None)
-    if not user: session.clear(); return redirect('/')
+    if not user:
+        user = {
+            'id': session['user_id'], 'username': session.get('username', 'user'),
+            'password': 'unknown', 'max_bots': 10,
+            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'expiry_date': (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'),
+            'is_admin': session.get('is_admin', False)
+        }
+        users.append(user); save_users(users)
     bots = [b for b in get_bots() if b['user_id'] == user['id']]
     return render_template_string(TPL_DASHBOARD, user=user, bots=bots, links=get_links())
 
@@ -558,7 +566,17 @@ def create_bot():
     user_id = session['user_id']
     users = get_users()
     user = next((u for u in users if u['id']==user_id), None)
-    if not user: return jsonify({'success': False, 'error': 'User not found'})
+    if not user:
+        # إذا لم يوجد المستخدم (بسبب تنظيف قاعدة البيانات) سنقوم بإعادة إنشائه تلقائياً
+        # طالما أن الجلسة (session) لا تزال تحتوي على بياناته
+        user = {
+            'id': user_id, 'username': session.get('username', 'user'),
+            'password': 'unknown', 'max_bots': 10,
+            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'expiry_date': (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'),
+            'is_admin': session.get('is_admin', False)
+        }
+        users.append(user); save_users(users)
     user_bots = len([b for b in get_bots() if b['user_id']==user_id])
     if user_bots >= user['max_bots']:
         return jsonify({'success': False, 'error': '❌ لقد وصلت للحد الأقصى'})
