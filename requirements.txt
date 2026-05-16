@@ -1,1 +1,5 @@
-flask\nrequests\npsutil\npycryptodome\ngunicorn
+flask
+requests
+psutil
+pycryptodome
+gunicorn
